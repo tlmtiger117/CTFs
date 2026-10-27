@@ -1,0 +1,537 @@
+================================================27/10/26: CTF ANNIE ENDED:===============================================
+
+   -  i still in this CTF for 2 months and for that vulnerability anydesk(CVE-2020-13160) is pure lucky, i gonna keep this
+      CTF in "my CTFs not completed, but that who tough me much".
+
+   - resume:
+      - target:
+
+         - initial access: CVE-2020-13160(pure lucky for gain access).
+
+            - user: annie
+            - OS: Ubuntu 18.04.6 LTS
+            - kernel: Linux 4.15.0-173-generic
+            - Architecture: x86-64
+
+            - first flag in "/home/annie/" (THM{N0t_Ju5t_ANY_D3sk}).
+
+      - hypotheses tested in PRIVESC:
+
+         - SUDO -L: TTY shell error. i don't solve this because for gain initial access all time in target, need walk for
+            "CVE-2020-13160".
+
+         - Crontab: nothing changed (my "annie" user don't allowed for use this options in your system(low privileges))
+       
+         - Kernel: much ways, but for test some, i needed a time (something that CVE don't give me), but i tested one
+            hypothese (CVE-2018-18955), fixed in my SO target version.
+
+         - SUID: possible vulnerability changed in the sudo program (CVE-2023-22809), but not confirmed because the TTY shel
+            and the "CVE-2020-13160" in initial access.
+
+         - PATH: not explored, but in my tests, this nothing seems interesting for gain my attention.
+
+      - not tested hypotheses:
+
+         - using a vulnerable program in the target(download/copy and send for use in the target).
+         - use linPEAS(same idea, but focus in get internal infos about the target).
+         
+
+   - what i learn in this CTF?:
+
+      - test hypothesis
+      - search vulnerability, versions and related infos.
+      - fixe and understand my tools (nmap, metasploit, tcpdump, searchsploit)
+      - little of impact("whats consequences my exploration cause in the target"?)
+
+
+
+==================================================MY day a day in this CTF annie============================================
+
+
+mental security: "i don't need every abou the targer, just test what is the most problely now".
+
+
+
+tools: openssl, client used for make one simple connction / lookups using the tls/ssl security protocol.
+   - when you connect with ssl, the server send datas about your auteticated(cert, suported ciphers, public key)
+
+   -[!] the nmap ssl script or openssl knows the server using a vulnerable portocol simplely using and connected
+        with that protocol("i test with protocol, i the server response me, i konow the cipher is suporeted").
+
+-learned: use one sniffer for see the real trafic in communication. this allow you debbuger one problam in your
+          situation. "i see the real trafic if necessary".
+
+
+
+
+=================================================points=========================================================
+
+26/08/26: today i make host-discovery with tcp protocol(target blocking icmp) and port-scaning step.
+   - for tomorrow, enumere-te that's access points.
+
+28/06/26: today i enumerated discovery ports in my target. i can see 2 ports wich open/closed state
+   ("the nmap don't can confirm the stats of ports").
+
+   - [!] search about SSL service. after this, try discovery one vulnerability in versions of ssh.
+   - [!] the unkonow ports, i keep this for lest(if others steps don't work).
+
+29/08/26: ssl (Secure Sockets Layer)
+   - certificate: used for say the client if hes saying the real server (name, public key, enterprise) the real
+      server. like:
+
+      - client:"i need one segure communication " -> server:"ok take my public informations for trust me"
+
+   - flow of that communication:
+
+   1°client and server
+   2°handshake:
+      - "client and server staying connected and preparing one secure communication"
+
+   3°certificates:
+      - informations about the server(name, address, public key, enterprise, validate certificate )
+      - "now you know, you can trust me".
+
+   4°tls/ssl: used for make one secure connection middle 2 hosts.
+
+      - public key -> client (send cipher datas)
+      - private key -> server (revice, descripted and hudestand what the client wanna )
+      - 
+
+   5°protected communication: 2 host stay secure in your communication.
+
+
+31/08/26: today i enumerate the 7070 port and discovery one tls server is vulnerable a "SWEET32" attack.
+   - for tomorrow, search about that "SWEET32-attack".
+
+1/09/26: today i lerning about "how openssl and nmap discovery a tls/ssl protocols in one server", in reality,
+         its very simple, he's just trying connecting with all allowed cipher about ssl and tls.
+
+2/09/26: the "3DES"(that vulnerable), work recive datas and separating in 8 blocks, like:
+
+         CIPHER
+= algoritmo de criptografia = sua informação ("ex: senha...")
+   ↓
+3DES
+
+BLOCK
+= pedaço de dados processado pela cipher
+   ↓
+3DES → 64 bits / 8 bytes(8 bits = 1 byte)
+
+MUITOS BLOCOS
+= muito tráfego usando a mesma chave pública (criptografa)
+
+~2³² BLOCOS
+= ponto em que colisões de 64 bits (8 bytes)
+começam a ficar relevantes (muitos blocos com os mesmos valores)
+
+SWEET32
+= ataque que aproveita essa propriedade
+de cifras com blocos de 64 bits ("se existem muitos blocos parecidos, posso usa-los para tentar extrari o
+tamanho da senha, algum caracter, numeros,etc.") isso é uma pista, a falha não revela tudo automaticamente.
+
+
+
+3/09/26: today i lerning about the sweet32 attack ando now, its very simple think that. for tomorrow, i can
+ search the conditios for see if that targer is realy vulnerable a that attack.
+
+
+08/09/26: the target suport 3DES cipher. also use the "Forward Secrecy"(sigilo avançado).
+   - thats basicly allow the ataccker see beforing datas with used the 3DES cipher.
+   - if this "Forward Secrecy" allowed, the attacker can see on ecommuniucation(hes used).
+   - [!] that is basicly the "assimilation attack".
+
+- [!!!] for tomorrow, use the wiehsark ofr see the negotiation TLS1.2 for see the real cipher used in server/nmap.
+
+
+09/09/26:
+
+   - target cipher: "TLS_RSA_WITH_3DES_EDE_CBC_SHA"
+
+      - TLS_RSA_WITH_3DES_EDE_CBC_SHA
+
+         TLS   → protocolo TLS
+         RSA   → criptografia assimétrica / estabelecimento da sessão
+         3DES  → cifra simétrica dos dados
+         EDE   → Encrypt → Decrypt → Encrypt (fluxo do 3DES) 
+         CBC   → modo de operação da cifra (como o 3DES opera/funciona).
+         SHA   → integridade/MAC
+
+   - client hello: cipher used / send a server
+   - server hello: cipher keep/allowed in client.
+
+- for tomorrow return for enumerating the others ports in ctf(the unknow ports).
+   -  if i gain one plaintext, this can bne used for make the sweet32 attack.
+
+10/09/26: today i remake the port-scan for discovery infos about the 2 unknow ports with close stat.
+          now i confirmed she's dont make nothing now.
+
+   - for tomorrow, search about the ssh enumerate them ssh infos in target (auth, keys, ciphers vuln)
+   - for this enumeration, the nmap apper make this(ssh modules).
+
+
+15/09/26: keys:
+
+   - priv_key: "i prove i am make that signature, is my letters".
+   - public: "ok, if you letters still stored in my book, i confirm that's letters realy is you".
+
+
+- for tomorrow, organize the infos discoverys in CTF. algoritms, auth metods and possibles CVEs.
+
+
+21/09/26: corrlation betuwen progras and your packets (ubuntu,debian,windows10,windwos7....).
+   - osv: site used for search thats infos. he's apper  good for seach vulnerabilits.
+
+
+22/09/26:
+
+   - [] quantos caracteres (0-9,a-z)
+   - {} quantas vezes deve aparecer/espaço fixo pra ele (4,5,3....)
+
+   - estrutura CVE: CVE-2024-12345
+                     |    |    |
+                    tipo ano  identificador
+
+[!] "anydesk", this apper in other CTF playes and he's use for make execute one exploit.
+[!!!] sempre valdiar uma hipótese antes de descartala do modelo principal(pesquisa!!!)
+
+23/09/26: today i remake the e enumeration and discover new infos about the anydesk program(remiote acess) travel ssl server.
+   - the ssl/TLS, don't shoe the program naturally, for this, you need coonect in that server and analyng the certificate
+     (infos about server/running insede hes)
+
+
+24/09/26: today i make the flow of vulnerability (cve_2020_13160). now missing manager the exploit in msfconsole.
+   - use advanced options for see more about that module.
+
+25/09/26:  today i goin in internal script of metasplit for hundetand what exacly one error apper(SRVHOST). one idei is
+           use the THM machine for see that error apper just in my VM kali or in other hosts/VMS.
+
+28/09/26: the CVE-2020-13160 module in msfconsole still bugged. i can serach other exploit for validation tha vulne
+          in anydesk porgram in Linux.
+
+30/09/26: possbles exploits, for that anydesk:
+
+   - author: SCRYH | type: remote | SO: Linux | CVE 2020-13160 | vulnerable program: AnyDesk 5.5.2(remote access program)
+   - site for search the exploits:
+
+      - sploitus.com(exploits): relate Exploit-DB, GitHub e Packet Storm. that others am exploits DBs.
+      - [!!!] focus in "anydesk5. GUI exploit strings". this is my scenario.
+
+   - supported anydesk SO:  Ubuntu 18.04 and later, Debian 10
+      - my is ubuntu 18.04.
+
+
+02/10/26: the possible exploiot revised in metasploit:
+
+   1° - "AnyDesk GUI Format String Write Exploit(CVE-2020-13160)"
+      - impackt: 9.8
+
+05/010/26: initial access gain int the target abusing the CVE-2020-13160:
+
+   - tools used: searchsploit and msfconsole. recomended testing thaats tools for validation one vulnerability.
+   - debbuging in exploit: i make one debuggin in relation a exploit used in msfconsole and searchsploit, principal in
+                           payload creation and the reverse connection.
+
+   - como eu ja percebido que o anydesk é um cerviço que comunmente atua na porta 50001, eu uso uma probe UDP especifica
+     para receber uma possível resposta do dele(ele pdoe ter sido coinfgurado para ignorar perguntas/pacotes genéricos)e
+     é aý que entra os pacotes modificados/payload(searchsploit,msfconsole...).
+
+   - after of configure the payload, just execute.
+
+08/10/26: exploit in annie ctf. Follow thats steps for maybe gain access in your manchine lab:
+
+- 1° executar usando o payload do próprio script(usem usar o do msfvenon) 2 vezes. 
+
+- 2° após isso, gerar o payload do msfvenom e executar. 
+     fiz assim e deu certo.
+
+- flag found: THM{N0t_Ju5t_ANY_D3sk}
+
+14/10/26: namespaces: limited the "vision" of one user insede the sistem. basicly separeted one kernel part for one something
+   - one user back the space, can a normal user, bur insede the part, hes can im one user root(id=0)
+
+19/10/26: "if the target is not vulnerable, i can make hes vulenrable?"
+
+   - insalling tools allowed up my privileges.
+   - but for this, is necessary one recon abbout the target (SO, KERNEL, archteture etc...)
+
+21/10/26: actual version in target("sudo" command): 1.8.21p2-3ubuntu1 (Vulnerável à CVE-2023-22809).
+    - for see if the packet of tool is vulnerable, you need see the version packet("how hat program wor in this OS").
+    - see the paths("ubuntu1" or others)
+
+   - for tomorrow, relacionation that CVE with SO/distro,archteture... and validate.
+
+22/10/26: my shell is dont tty(interactive wich other programs). try solved this.
+
+         
+   
+   
+
+===========================================================possibles ways===================================================
+
+geral infos:
+
+
+   - user annie
+   - Static hostname: desktop
+         Icon name: computer-vm
+           Chassis: vm
+        Machine ID: 9035659da70a4b8ebcd6691cfa3ab648
+           Boot ID: 95fbb9ff6c9944b79dc64982dc996d0f
+    Virtualization: kvm
+  Operating System: Ubuntu 18.04.6 LTS
+            Kernel: Linux 4.15.0-173-generic
+      Architecture: x86-64
+
+
+[N] not explorable.
+
+kernel: Linux 4.15.0-173-generic
+   - seems allow the exploit kernel(privesc)
+   - the vulne: CVE-2018-18955
+
+
+- possibles CVES:
+    - 2023-22809 (sudo command):
+    - actual version in target: 1.8.21p2-3ubuntu1 (Vulnerável à CVE-2023-22809)
+    - corrected version:        1.8.21p2-3ubuntu1.5
+
+- sudoedit: allow modify one privileged files with one copy he.
+
+   - if the copy as privileged, you can modify this(if you have permitions for this.)
+
+      - version(sudoedit): sudo 1.8.21p2-3ubuntu1.4 amd64
+
+
+- ==============================-4000 perm in target.("allow execute one file with root user")============================
+
+ [?] = search for nmap tool. exist one vulnerable versions allowed create shell(nmap --interative) bettewn 2.02 to 5.21
+
+/sbin/setcap [x] suid way.
+/bin/mount[no]
+/bin/ping[?]
+/bin/su[?]
+/bin/fusermount[no]
+/bin/umount[no]
+/usr/sbin/pppd[no]
+/usr/lib/eject/dmcrypt-get-device
+/usr/lib/openssh/ssh-keysign
+/usr/lib/policykit-1/polkit-agent-helper-1
+/usr/lib/xorg/Xorg.wrap
+/usr/lib/dbus-1.0/dbus-daemon-launch-helper
+/usr/bin/arping[no]
+/usr/bin/newgrp[no]
+/usr/bin/sudo[no]
+/usr/bin/traceroute6.iputils[?]
+/usr/bin/chfn[no]
+/usr/bin/gpasswd[no]
+/usr/bin/chsh[no]
+/usr/bin/passwd [no]
+/usr/bin/pkexec[no]
+
+=============atualization:================
+
+   ls -l /usr/bin/sudo
+   -rwsr-xr-x 1 root root 149080 Jan 19  2021 /usr/bin/sudo
+
+   131142     12 -rwsr-xr-x   1 root     root        10232 Nov 16  2017 /sbin/setcap
+   655379     44 -rwsr-xr-x   1 root     root        43088 Sep 16  2020 /bin/mount
+   655430     64 -rwsr-xr-x   1 root     root        64424 Jun 28  2019 /bin/ping
+   655397     44 -rwsr-xr-x   1 root     root        44664 Jan 25  2022 /bin/su
+   655514     32 -rwsr-xr-x   1 root     root        30800 Aug 11  2016 /bin/fusermount
+   655423     28 -rwsr-xr-x   1 root     root        26696 Sep 16  2020 /bin/umount
+   803938    372 -rwsr-xr--   1 root     dip        378600 Jul 23  2020 /usr/sbin/pppd
+   786802     12 -rwsr-xr-x   1 root     root        10232 Mar 27  2017 /usr/lib/eject/dmcrypt-get-device
+   804179    428 -rwsr-xr-x   1 root     root       436552 Mar  2  2020 /usr/lib/openssh/ssh-keysign
+   138895     16 -rwsr-xr-x   1 root     root        14328 Jan 12  2022 /usr/lib/policykit-1/polkit-agent-helper-1
+   138962     12 -rwsr-sr-x   1 root     root        10232 Dec 14  2021 /usr/lib/xorg/Xorg.wrap
+   799962     44 -rwsr-xr--   1 root     messagebus    42992 Jun 11  2020 /usr/lib/dbus-1.0/dbus-daemon-launch-helper
+   803534     24 -rwsr-xr-x   1 root     root          22528 Jun 28  2019 /usr/bin/arping
+   788281     40 -rwsr-xr-x   1 root     root          40344 Jan 25  2022 /usr/bin/newgrp
+   799147    148 -rwsr-xr-x   1 root     root         149080 Jan 19  2021 /usr/bin/sudo
+   799099     20 -rwsr-xr-x   1 root     root          18448 Jun 28  2019 /usr/bin/traceroute6.iputils
+   787313     76 -rwsr-xr-x   1 root     root          76496 Jan 25  2022 /usr/bin/chfn
+   787330     76 -rwsr-xr-x   1 root     root          75824 Jan 25  2022 /usr/bin/gpasswd
+   787328     44 -rwsr-xr-x   1 root     root          44528 Jan 25  2022 /usr/bin/chsh
+   787331     60 -rwsr-xr-x   1 root     root          59640 Jan 25  2022 /usr/bin/passwd
+   801215     24 -rwsr-xr-x   1 root     root          22520 Jan 12  2022 /usr/bin/pkexec
+
+
+- ==============================================================sistema=====================================================
+   - Linux desktop 4.15.0-173-generic #182-Ubuntu SMP Fri Mar 18 15:53:46 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux
+
+   - Static hostname: desktop
+         Icon name: computer-vm
+           Chassis: vm
+        Machine ID: 9035659da70a4b8ebcd6691cfa3ab648
+           Boot ID: 95fbb9ff6c9944b79dc64982dc996d0f
+    Virtualization: kvm
+  Operating System: Ubuntu 18.04.6 LTS
+            Kernel: Linux 4.15.0-173-generic
+      Architecture: x86-64
+
+   - 
+
+
+=================================================================(not-working)==============================================
+
+contrab: the agended tasks.
+kernel: security/program used for allow or deny something based one rule.(CVE-2018-18955) fixed error in my OS distro.
+SUID: execute programs with creted user
+
+
+
+
+
+
+
+==================================================CTF INFOS=================================================================
+
+
+ctf: annie
+foco: recon and privesc (windows? Linux? i don't know).
+
+
+- host-discovery:
+
+- target host:10.65.131.142
+   - he's blocking a icmp protocol for take one response about your state (now, i know he's up)
+
+   - [!] he's not blocking a tcp protocol.
+
+
+- port scanning(all ports(65535)):
+
+   - PORT      STATE SERVICE
+
+22/tcp    open   ssh             syn-ack ttl 62 OpenSSH 7.6p1 Ubuntu 4ubuntu0.6 (Ubuntu Linux; protocol 2.0)
+|_banner: SSH-2.0-OpenSSH_7.6p1 Ubuntu-4ubuntu0.6
+
+   - auth method allowed: public key. "minha ssinatura o server já conhece, então ele pode liberar o acesso pra mim".
+
+   - possibles CVEs:
+
+         - search about she's.
+
+7070/tcp  open   ssl/realserver? syn-ack ttl 62 
+
+possible OS: Linux 4.15 - 5.19 (96%). its a guessing, is not 100% trusted.
+
+- [!] protocol version : TLSv1.2 -> protocolo comum, não significa altomaticamente vulnerável(com missconfigs).
+
+- [!!] suported algoritms: 3DES (Vulnerable = block key with 64 bits/caracteres(small)) and others.
+
+- [!] Forward Secrecy not supported by any cipher. "sigilo futuro", ou seja, se comprometerem chave privada, 
+      todas as comunicações anteriores que usaram ela(essa chave privada) seriam expostas.
+
+   - public key: "essa é minha lista de assinaturas, se a sue estiver aqui, consigo validar seu acesso/assinatura".
+
+   - private key: "essa é minha assinatura, isso prova que eu sou o dono"
+                   
+
+
+- thats ports not allow/say nothuing in that CTF(distraction)
+
+40151/tcp closed  unknown "the nmap not can say if this port is open or closed(no service)".
+44501/tcp open/closed  unknown
+
+- [!] the target not suport ipv6.
+
+
+===========================================organized infos==============================================
+
+
+- host: Ubuntu 18.04
+
+   TCP/IP fingerprint:
+
+OS:SCAN(V=7.99%E=4%D=9/23%OT=22%CT=1%CU=40973%PV=Y%DS=3%DC=I%G=Y%TM=6AB43BA
+OS:4%P=x86_64-pc-linux-gnu)SEQ(SP=100%GCD=1%ISR=107%TI=Z%CI=Z%II=I%TS=A)SEQ
+OS:(SP=101%GCD=1%ISR=10D%TI=Z%CI=Z%II=I%TS=A)SEQ(SP=103%GCD=1%ISR=10B%TI=Z%
+OS:CI=Z%II=I%TS=A)SEQ(SP=105%GCD=1%ISR=10A%TI=Z%CI=Z%II=I%TS=A)SEQ(SP=105%G
+OS:CD=1%ISR=10E%TI=Z%CI=Z%TS=A)OPS(O1=M4E8ST11NW6%O2=M4E8ST11NW6%O3=M4E8NNT
+OS:11NW6%O4=M4E8ST11NW6%O5=M4E8ST11NW6%O6=M4E8ST11)WIN(W1=F4B3%W2=F4B3%W3=F
+OS:4B3%W4=F4B3%W5=F4B3%W6=F4B3)ECN(R=Y%DF=Y%T=40%W=F507%O=M4E8NNSNW6%CC=Y%Q
+OS:=)T1(R=Y%DF=Y%T=40%S=O%A=S+%F=AS%RD=0%Q=)T2(R=N)T3(R=N)T4(R=Y%DF=Y%T=40%
+OS:W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T5(R=Y%DF=Y%T=40%W=0%S=Z%A=S+%F=AR%O=%RD=0%Q=
+OS:)T6(R=Y%DF=Y%T=40%W=0%S=A%A=Z%F=R%O=%RD=0%Q=)T7(R=Y%DF=Y%T=40%W=0%S=Z%A=
+OS:S+%F=AR%O=%RD=0%Q=)U1(R=Y%DF=N%T=40%IPL=164%UN=0%RIPL=G%RID=G%RIPCK=G%RU
+OS:CK=G%RUD=G)IE(R=Y%DFI=N%T=40%CD=S)
+
+   - "possíble manager/segure server used for make secure connections(ssh and tls1.2)" in teory.
+
+- 22 port:
+
+   - protocol: SSH
+   - service:  SSH (remote access)
+
+   - version program/client: OpenSSH 7.6p1 Ubuntu 4ubuntu0.6 (Ubuntu Linux; protocol 2.0)
+   - auth method: public key or password
+
+   - [!] algoritms: diffie-hellman-group14-sha1
+        - method used for exange in network withot show the keys(math calcs + hash validation = 
+                                                                        "secret" enxange).
+        - legacy hash, used for prove the datas not manager
+
+
+      - [!] possibles CVES:
+
+           - CVE-2017-15906 [não vulnerável. versão atual não permite esse exploração.]
+           - CVE-1999-0661  [não vulnerável]
+
+           - [!] CVE-2025-26465 ( 6.8p1 through 9.9p) versões entre 6.8 a 9.9
+           - CVE-2025-32728 ()
+
+
+- 7070 port:
+
+   - protocol: TCP
+
+   - service: ssl/TLS1.2 usado para fazer uma conexão TCP segura entre um programa e um servidor.
+
+   - programa: possível anydesk(client de acesso remoto).
+
+      - CVE: CVE-2020-13160
+
+       me -> malicios UDP packet strings -> client anydesk target -> processes -> exploit -> execute -> gain something.
+
+      - ssl-cert: Subject: commonName=AnyDesk Client -> anydesk client = programa de acesso remoto. nesse caso, assinado pelo próprio server.
+                                                                         "eu provo eu sou o dono e eu mesmo verifico isso"
+         | Issuer: commonName=AnyDesk Client
+         | Public Key type: rsa
+         | Public Key bits: 2048
+         | Signature Algorithm: sha256WithRSAEncryption
+
+
+   - [!] algoritms: 3DES
+      - vulnerable a sweet32 attack(correlation attack)
+      - need before infos for relationated with the blocks/process.
+
+      - programa de acesso remoto que assina e comprova sua própria identidade + cipher vulnerável (3DES) e que permite o user especificar
+        o protocolo.
+
+    - [!!!] possívrl fluxo encontrado, testar amnhã:
+
+    openssh version packet -> descobre a versão do SO compatível com ela -> pesquisa sobre quais outros serviços são
+    compatíveis com essa versão -> correlaciona com anydesk compatível com essa versão do SO -> busca algum exploit -> valida 
+    se funciona. (usar o cliente openssl pra validar o certificado recebido do ssl)
+
+- pra testar(privesc): capabilits e PATH
+
+====================================================ideias==================================================================
+- TTY: one type of shell. this is not allowed for target system. maybe have one way for bypass this reaction.
+
+   - TTY: maybe the target wait one TTY shell
+      - [!] pure bash shell don't work. the targets never reply the packets or one response.
+
+   - sudo need one pass: maybe the target need some for autenticate the user for use the sudo. for this hes dont allow me
+                         use the sudo.
+
+
+   
+   
+   
+
+
+
+
